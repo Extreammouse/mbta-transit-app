@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors, { MBTA_COLORS } from '@/constants/Colors';
+import ChatBot from '../src/components/ChatBot/ChatBot';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -94,6 +95,7 @@ function RootLayoutNav() {
           }}
         />
       </Stack>
+      <ChatBot />
     </ThemeProvider>
   );
 }
