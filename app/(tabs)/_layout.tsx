@@ -1,11 +1,11 @@
-import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Tabs } from 'expo-router';
-import { Pressable, StyleSheet, View, Text } from 'react-native';
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import Colors, { MBTA_COLORS } from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { useColorScheme } from '@/components/useColorScheme';
+import { MBTA_COLORS } from '@/constants/Colors';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof Ionicons>['name'];
@@ -89,6 +89,15 @@ export default function TabLayout() {
           title: 'Live',
           tabBarIcon: ({ color }) => <TabBarIcon name="pulse" color={color} />,
           headerTitle: 'Live Connections',
+        }}
+      />
+      <Tabs.Screen
+        name="navigate"
+        options={{
+          title: 'Navigate',
+          tabBarIcon: ({ color }) => <TabBarIcon name="compass" color={color} />,
+          headerTitle: 'Indoor Navigation',
+          headerShown: false, // AR view manages its own header
         }}
       />
       <Tabs.Screen
