@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import { Stop, Route, Shape } from '../../src/types/mbta';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker, Polyline, Region } from 'react-native-maps';
 import { MBTA_COLORS } from '../../constants/Colors';
 import { BOSTON_REGION } from '../../constants/Config';
-import { getRouteColor, decodePolyline } from '../../src/utils/helpers';
-import { Ionicons } from '@expo/vector-icons';
+import { Route, Shape, Stop } from '../../src/types/mbta';
+import { decodePolyline, getRouteColor } from '../../src/utils/helpers';
 
 interface MBTAMapProps {
     routes: Route[];
@@ -130,7 +130,6 @@ export function MBTAMap({
             <MapView
                 ref={mapRef}
                 style={styles.map}
-                provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
                 initialRegion={BOSTON_REGION}
                 region={region}
                 onRegionChangeComplete={setRegion}

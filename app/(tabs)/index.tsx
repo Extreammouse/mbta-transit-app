@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { MBTAMap } from '@/components/Map/MBTAMap';
 import { StopSelector } from '@/components/StopSelector/StopSelector';
 import { MBTA_COLORS } from '@/constants/Colors';
 import { mbtaApi } from '@/src/services/mbta-api';
@@ -17,6 +18,7 @@ function MapScreen() {
   const [selectedDestination, setSelectedDestination] = useState<Stop | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState<'origin' | 'destination' | null>(null);
 
   // Load initial data
   const loadData = useCallback(async () => {
@@ -55,6 +57,16 @@ function MapScreen() {
   const handleClearSelection = () => {
     setSelectedOrigin(null);
     setSelectedDestination(null);
+    setSelectionMode(null);
+  };
+
+  const handleMapStopSelect = (stop: Stop, type: 'origin' | 'destination') => {
+    if (type === 'origin') {
+      setSelectedOrigin(stop);
+    } else {
+      setSelectedDestination(stop);
+    }
+    setSelectionMode(null);
   };
 
   if (loading) {
@@ -85,38 +97,17 @@ function MapScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Map Placeholder */}
-      <View style={styles.mapPlaceholder}>
-        <View style={styles.placeholderContent}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="map" size={64} color={MBTA_COLORS.navy} />
-          </View>
-          <Text style={styles.placeholderTitle}>Interactive Map</Text>
-          <Text style={styles.placeholderText}>
-            The full map view requires a development build with native modules.
-          </Text>
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color={MBTA_COLORS.blue} />
-            <Text style={styles.infoText}>
-              To enable the map, run: <Text style={styles.code}>npx expo prebuild</Text>
-            </Text>
-          </View>
-          <Text style={styles.placeholderSubtext}>
-            Use the selectors below to choose your origin and destination stations.
-          </Text>
-        </View>
-
-        {/* Route Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{routes.length}</Text>
-            <Text style={styles.statLabel}>Routes</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stops.length}</Text>
-            <Text style={styles.statLabel}>Stations</Text>
-          </View>
-        </View>
+      {/* Interactive Map */}
+      <View style={styles.mapContainer}>
+        <MBTAMap
+          routes={routes}
+          stops={stops}
+          selectedOrigin={selectedOrigin}
+          selectedDestination={selectedDestination}
+          onSelectStop={handleMapStopSelect}
+          selectionMode={selectionMode}
+          showRoutes={true}
+        />
       </View>
 
       {/* Bottom Sheet for Selection */}
@@ -203,6 +194,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: MBTA_COLORS.background,
+  },
+  mapContainer: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,

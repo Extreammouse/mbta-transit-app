@@ -32,6 +32,7 @@ export class LLMNavigationService {
     private cactusLM: any = null;
     private isInitialized: boolean = false;
     private isLoading: boolean = false;
+    private isGenerating: boolean = false; // Track if currently generating
     private initError: string | null = null;
     private conversationHistory: Message[] = [];
 
@@ -119,6 +120,13 @@ export class LLMNavigationService {
     }
 
     /**
+     * Check if currently generating
+     */
+    isGeneratingResponse(): boolean {
+        return this.isGenerating;
+    }
+
+    /**
      * Get navigation directions from the LLM
      */
     async getDirections(userQuery: string, stationId?: string): Promise<NavigationResponse> {
@@ -127,6 +135,15 @@ export class LLMNavigationService {
             console.log('[LLMNavigationService] Not ready, using fallback');
             return this.getFallbackResponse(userQuery);
         }
+
+        // If already generating, return fallback (don't queue - Cactus doesn't support it)
+        if (this.isGenerating) {
+            console.log('[LLMNavigationService] Already generating, using fallback');
+            return this.getFallbackResponse(userQuery);
+        }
+
+        // Set generating flag
+        this.isGenerating = true;
 
         try {
             // Add station context if provided
@@ -186,6 +203,9 @@ export class LLMNavigationService {
         } catch (error) {
             console.error('[LLMNavigationService] Error getting directions:', error);
             return this.getFallbackResponse(userQuery);
+        } finally {
+            // Always clear the generating flag
+            this.isGenerating = false;
         }
     }
 

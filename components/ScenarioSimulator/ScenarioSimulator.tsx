@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MBTA_COLORS } from '../../constants/Colors';
 import { getLLMNavigationService } from '../../src/services/llmNavigationService';
@@ -33,18 +33,50 @@ export function ScenarioSimulator({
     );
     const [aiResponse, setAiResponse] = useState<string | null>(null);
     const [aiLoading, setAiLoading] = useState(false);
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hasUserInteracted = useRef(false);
+    const previousConfidence = useRef<ConfidenceLevel>(currentConfidence);
 
+    // Update confidence when anything changes
     useEffect(() => {
-        const { newConfidence, newBuffer } = simulateDelay(
+        const { newConfidence } = simulateDelay(
             originalBufferSeconds,
             delayMinutes * 60
         );
         setCurrentConfidence(newConfidence);
         onConfidenceChange?.(newConfidence);
 
-        // Get AI insight when confidence changes
-        getAIInsight(newConfidence, delayMinutes);
-    }, [delayMinutes, originalBufferSeconds, walkingSpeed]);
+        // Update static response immediately
+        setAiResponse(getStaticResponse(newConfidence));
+
+        // Store for comparison
+        previousConfidence.current = newConfidence;
+    }, [originalBufferSeconds, delayMinutes]);
+
+    // Only call AI when user explicitly interacts (changes delay or walking speed)
+    useEffect(() => {
+        // Skip the initial mount - only call AI after user interaction
+        if (!hasUserInteracted.current) {
+            return;
+        }
+
+        // Clear any existing timer
+        if (debounceTimer.current) {
+            clearTimeout(debounceTimer.current);
+        }
+
+        // Debounce AI call by 1 second after user stops adjusting
+        debounceTimer.current = setTimeout(() => {
+            getAIInsight(currentConfidence, delayMinutes);
+        }, 1000);
+
+        // Cleanup timer on unmount
+        return () => {
+            if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+            }
+        };
+    }, [delayMinutes, walkingSpeed]); // Only trigger on user-controlled values
 
     // Get AI-powered connection status
     const getAIInsight = async (confidence: ConfidenceLevel, delay: number) => {
@@ -83,6 +115,7 @@ export function ScenarioSimulator({
     };
 
     const handleDelayChange = (value: number) => {
+        hasUserInteracted.current = true;
         const minutes = Math.round(value);
         setDelayMinutes(minutes);
         onDelayChange?.(minutes);
@@ -111,7 +144,10 @@ export function ScenarioSimulator({
                                 styles.speedButton,
                                 walkingSpeed === speed && styles.speedButtonActive,
                             ]}
-                            onPress={() => onSpeedChange(speed)}
+                            onPress={() => {
+                                hasUserInteracted.current = true;
+                                onSpeedChange(speed);
+                            }}
                         >
                             <Ionicons
                                 name={
