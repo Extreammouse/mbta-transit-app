@@ -4,19 +4,7 @@
  */
 
 import type { Direction } from '../data/demoScenarios';
-import { MBTA_NAVIGATION_SYSTEM_PROMPT } from '../data/stationContext';
-
-// Type definitions for Cactus SDK
-interface CactusContext {
-    completion: (params: { prompt: string; nPredict?: number; stop?: string[] }) => Promise<{ text: string }>;
-    release: () => void;
-}
-
-interface CactusInitParams {
-    model: string;
-    n_ctx?: number;
-    n_gpu_layers?: number;
-}
+import { MBTA_NAVIGATION_SYSTEM_PROMPT, getStationContext } from '../data/stationContext';
 
 // Direction parsing from LLM response
 const DIRECTION_PATTERNS: Record<Direction, RegExp> = {
@@ -35,15 +23,24 @@ export interface NavigationResponse {
     confidence: number;
 }
 
+export interface Message {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+}
+
 export class LLMNavigationService {
-    private context: CactusContext | null = null;
+    private cactusLM: any = null;
     private isInitialized: boolean = false;
     private isLoading: boolean = false;
-    private modelPath: string;
+    private initError: string | null = null;
+    private conversationHistory: Message[] = [];
 
-    constructor(modelPath?: string) {
-        // Default path - will need to be adjusted based on how we bundle the model
-        this.modelPath = modelPath || 'gemma-3-1b-it-q4_0.gguf';
+    constructor() {
+        // Initialize with system prompt
+        this.conversationHistory = [{
+            role: 'system',
+            content: MBTA_NAVIGATION_SYSTEM_PROMPT
+        }];
     }
 
     /**
@@ -55,36 +52,46 @@ export class LLMNavigationService {
         if (this.isLoading) return false;
 
         this.isLoading = true;
+        this.initError = null;
 
         try {
-            // Dynamic import of Cactus - it's a native module
-            // Note: cactus-react-native API may vary - this uses the common initLlama pattern
-            const cactusModule = await import('cactus-react-native');
+            console.log('[LLMNavigationService] Starting initialization...');
 
-            // Try different initialization methods based on what's available
-            const initFn = (cactusModule as any).initLlama ||
-                (cactusModule as any).default?.initLlama ||
-                (cactusModule as any).Cactus?.init;
+            // Import the Cactus SDK
+            const { CactusLM } = await import('cactus-react-native');
 
-            if (!initFn) {
-                console.warn('[LLMNavigationService] Cactus SDK init function not found, using fallback mode');
-                this.isLoading = false;
-                return false;
-            }
+            // Create CactusLM instance
+            // Using Cactus's built-in gemma-3-1b-it model (320MB int4)
+            this.cactusLM = new CactusLM({
+                model: 'gemma-3-1b-it', // Correct model name from Cactus SDK
+                contextSize: 2048,
+                options: {
+                    quantization: 'int4' // Use int4 for smaller size (320MB)
+                }
+            });
 
-            // Initialize with the model
-            this.context = await initFn({
-                model: this.modelPath,
-                n_ctx: 2048, // Context window
-                n_gpu_layers: 0, // CPU only for broader compatibility
-            } as CactusInitParams);
+            console.log('[LLMNavigationService] CactusLM instance created');
+
+            // Download the model if not already downloaded
+            console.log('[LLMNavigationService] Checking/downloading model...');
+            await this.cactusLM.download({
+                onProgress: (progress: number) => {
+                    console.log(`[LLMNavigationService] Download progress: ${(progress * 100).toFixed(1)}%`);
+                }
+            });
+
+            console.log('[LLMNavigationService] Model downloaded, initializing...');
+
+            // Initialize the model
+            await this.cactusLM.init();
 
             this.isInitialized = true;
             this.isLoading = false;
-            console.log('[LLMNavigationService] Model loaded successfully');
+            console.log('[LLMNavigationService] Model initialized successfully');
             return true;
         } catch (error) {
             console.error('[LLMNavigationService] Failed to initialize:', error);
+            this.initError = error instanceof Error ? error.message : 'Unknown error';
             this.isLoading = false;
             return false;
         }
@@ -94,31 +101,81 @@ export class LLMNavigationService {
      * Check if the service is ready to use
      */
     isReady(): boolean {
-        return this.isInitialized && this.context !== null;
+        return this.isInitialized && this.cactusLM !== null;
+    }
+
+    /**
+     * Get initialization error message
+     */
+    getInitError(): string | null {
+        return this.initError;
+    }
+
+    /**
+     * Check if currently loading
+     */
+    isModelLoading(): boolean {
+        return this.isLoading;
     }
 
     /**
      * Get navigation directions from the LLM
      */
-    async getDirections(userQuery: string, stationContext?: string): Promise<NavigationResponse> {
+    async getDirections(userQuery: string, stationId?: string): Promise<NavigationResponse> {
         // If not initialized, return a fallback response
         if (!this.isReady()) {
+            console.log('[LLMNavigationService] Not ready, using fallback');
             return this.getFallbackResponse(userQuery);
         }
 
         try {
-            // Build the full prompt
-            const systemPrompt = stationContext || MBTA_NAVIGATION_SYSTEM_PROMPT;
-            const fullPrompt = `${systemPrompt}\n\nUser: ${userQuery}\nAssistant:`;
+            // Add station context if provided
+            if (stationId) {
+                const stationContext = getStationContext(stationId as any);
+                if (stationContext) {
+                    // Update system message with specific station info
+                    this.conversationHistory[0] = {
+                        role: 'system',
+                        content: stationContext.details
+                    };
+                }
+            }
 
-            // Get completion from the model
-            const result = await this.context!.completion({
-                prompt: fullPrompt,
-                nPredict: 150, // Max tokens to generate
-                stop: ['\n\n', 'User:', '\nUser'], // Stop sequences
+            // Add user message to history
+            this.conversationHistory.push({
+                role: 'user',
+                content: userQuery
             });
 
-            const responseText = result.text.trim();
+            console.log('[LLMNavigationService] Sending query:', userQuery);
+
+            // Get completion from the model
+            const result = await this.cactusLM.complete({
+                messages: this.conversationHistory,
+                options: {
+                    maxTokens: 150,
+                    temperature: 0.7,
+                    stopSequences: ['\n\n', 'User:'],
+                }
+            });
+
+            const responseText = result.response || '';
+            console.log('[LLMNavigationService] Response:', responseText);
+
+            // Add assistant response to history
+            this.conversationHistory.push({
+                role: 'assistant',
+                content: responseText
+            });
+
+            // Keep history manageable (last 10 messages + system)
+            if (this.conversationHistory.length > 11) {
+                this.conversationHistory = [
+                    this.conversationHistory[0], // Keep system prompt
+                    ...this.conversationHistory.slice(-10)
+                ];
+            }
+
             const direction = this.parseDirection(responseText);
 
             return {
@@ -183,10 +240,24 @@ export class LLMNavigationService {
                 confidence: 0.6,
             };
         }
+        if (lowerQuery.includes('blue line')) {
+            return {
+                text: 'Follow the blue signs to find the Blue Line.',
+                direction: 'straight',
+                confidence: 0.6,
+            };
+        }
         if (lowerQuery.includes('exit') || lowerQuery.includes('out')) {
             return {
                 text: 'Look for exit signs pointing to street level.',
                 direction: 'up',
+                confidence: 0.6,
+            };
+        }
+        if (lowerQuery.includes('stair') || lowerQuery.includes('up')) {
+            return {
+                text: 'Stairs are typically near the ends of the platform.',
+                direction: 'straight',
                 confidence: 0.6,
             };
         }
@@ -199,12 +270,26 @@ export class LLMNavigationService {
     }
 
     /**
+     * Clear conversation history
+     */
+    clearHistory(): void {
+        this.conversationHistory = [{
+            role: 'system',
+            content: MBTA_NAVIGATION_SYSTEM_PROMPT
+        }];
+    }
+
+    /**
      * Release the model from memory
      */
     async release(): Promise<void> {
-        if (this.context) {
-            this.context.release();
-            this.context = null;
+        if (this.cactusLM) {
+            try {
+                await this.cactusLM.destroy();
+            } catch (e) {
+                console.error('[LLMNavigationService] Error releasing:', e);
+            }
+            this.cactusLM = null;
             this.isInitialized = false;
         }
     }

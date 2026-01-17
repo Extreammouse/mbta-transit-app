@@ -9,11 +9,13 @@ import { useCactusLLM } from '@/src/hooks/useCactusLLM';
 import { useDemoMode } from '@/src/hooks/useDemoMode';
 import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     Dimensions,
     StatusBar,
     StyleSheet,
     Text,
-    View
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import Animated, {
     useAnimatedStyle,
@@ -33,14 +35,16 @@ interface ARNavigatorProps {
     onClose?: () => void;
 }
 
-// Camera component - dynamically imported
-let CameraComponent: React.ComponentType<any> | null = null;
+// Dynamic camera types
+type CameraPermissionStatus = 'undetermined' | 'granted' | 'denied';
 
 export function ARNavigator({ isDemoMode = true, onClose }: ARNavigatorProps) {
     const [cameraReady, setCameraReady] = useState(false);
     const [cameraError, setCameraError] = useState<string | null>(null);
     const [chatCollapsed, setChatCollapsed] = useState(false);
-    const [showCamera, setShowCamera] = useState(false);
+    const [permissionStatus, setPermissionStatus] = useState<CameraPermissionStatus>('undetermined');
+    const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+    const [CameraView, setCameraView] = useState<React.ComponentType<any> | null>(null);
 
     // Demo mode state  
     const demoMode = useDemoMode();
@@ -87,23 +91,41 @@ export function ARNavigator({ isDemoMode = true, onClose }: ARNavigatorProps) {
         llm.initialize();
     }, [isDemoMode]);
 
-    // Try to load camera for real mode
+    // Load camera for real AR mode
     useEffect(() => {
         if (!isDemoMode) {
-            loadCamera();
+            loadCameraAndRequestPermission();
         }
     }, [isDemoMode]);
 
-    async function loadCamera() {
-        try {
-            const { CameraView, useCameraPermissions } = await import('expo-camera');
-            CameraComponent = CameraView;
+    async function loadCameraAndRequestPermission() {
+        setIsRequestingPermission(true);
+        setCameraError(null);
 
-            // Request permissions would happen here
-            setCameraReady(true);
+        try {
+            // Dynamically import expo-camera
+            const cameraModule = await import('expo-camera');
+            const { CameraView: CameraViewComponent, useCameraPermissions, Camera } = cameraModule;
+
+            // Store the CameraView component
+            setCameraView(() => CameraViewComponent);
+
+            // Request permission
+            const permissionResult = await Camera.requestCameraPermissionsAsync();
+
+            if (permissionResult.granted) {
+                setPermissionStatus('granted');
+                setCameraReady(true);
+            } else {
+                setPermissionStatus('denied');
+                setCameraError('Camera permission denied. Please enable it in settings.');
+            }
         } catch (err) {
-            console.log('Camera not available:', err);
-            setCameraError('Camera not available. Using demo mode.');
+            console.error('Camera error:', err);
+            setCameraError('Camera not available: ' + (err instanceof Error ? err.message : 'Unknown error'));
+            setPermissionStatus('denied');
+        } finally {
+            setIsRequestingPermission(false);
         }
     }
 
@@ -111,36 +133,82 @@ export function ARNavigator({ isDemoMode = true, onClose }: ARNavigatorProps) {
         await llm.sendMessage(text);
     };
 
+    // Render camera or demo background
+    const renderBackground = () => {
+        if (isDemoMode) {
+            // Demo mode background
+            return (
+                <View style={styles.demoBackground}>
+                    <View style={styles.demoBackgroundOverlay} />
+                    <View style={styles.demoGrid}>
+                        {[...Array(8)].map((_, i) => (
+                            <View
+                                key={i}
+                                style={[
+                                    styles.gridLine,
+                                    { top: `${12.5 * i}%`, opacity: 0.1 + (i * 0.05) }
+                                ]}
+                            />
+                        ))}
+                    </View>
+                    <Text style={styles.demoLabel}>📹 DEMO MODE</Text>
+                </View>
+            );
+        }
+
+        // AR mode - show camera or permission request
+        if (isRequestingPermission) {
+            return (
+                <View style={styles.cameraPlaceholder}>
+                    <ActivityIndicator size="large" color={MBTA_COLORS.green} />
+                    <Text style={styles.cameraPlaceholderText}>Requesting camera permission...</Text>
+                </View>
+            );
+        }
+
+        if (permissionStatus === 'denied' || cameraError) {
+            return (
+                <View style={styles.cameraPlaceholder}>
+                    <Text style={styles.cameraErrorText}>📷</Text>
+                    <Text style={styles.cameraPlaceholderText}>
+                        {cameraError || 'Camera permission required'}
+                    </Text>
+                    <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={loadCameraAndRequestPermission}
+                    >
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        if (cameraReady && CameraView) {
+            // Render actual camera
+            const CameraComponent = CameraView;
+            return (
+                <CameraComponent
+                    style={StyleSheet.absoluteFill}
+                    facing="back"
+                />
+            );
+        }
+
+        // Fallback
+        return (
+            <View style={styles.cameraPlaceholder}>
+                <Text style={styles.cameraPlaceholderText}>Loading camera...</Text>
+            </View>
+        );
+    };
+
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" />
 
-            {/* Background - Camera or Demo Image */}
+            {/* Background - Camera or Demo */}
             <View style={styles.cameraContainer}>
-                {isDemoMode || !showCamera ? (
-                    // Demo mode background - stylized subway station image pattern
-                    <View style={styles.demoBackground}>
-                        <View style={styles.demoBackgroundOverlay} />
-                        <View style={styles.demoGrid}>
-                            {/* Create a grid pattern to simulate depth */}
-                            {[...Array(8)].map((_, i) => (
-                                <View
-                                    key={i}
-                                    style={[
-                                        styles.gridLine,
-                                        { top: `${12.5 * i}%`, opacity: 0.1 + (i * 0.05) }
-                                    ]}
-                                />
-                            ))}
-                        </View>
-                        <Text style={styles.demoLabel}>📹 DEMO MODE</Text>
-                    </View>
-                ) : (
-                    // Real camera view
-                    <View style={styles.cameraPlaceholder}>
-                        <Text style={styles.cameraPlaceholderText}>Camera View</Text>
-                    </View>
-                )}
+                {renderBackground()}
             </View>
 
             {/* Instruction Banner */}
@@ -308,6 +376,22 @@ const styles = StyleSheet.create({
         top: 200,
         left: 0,
         right: 0,
+    },
+    cameraErrorText: {
+        fontSize: 48,
+        marginBottom: 16,
+    },
+    retryButton: {
+        marginTop: 20,
+        backgroundColor: MBTA_COLORS.green,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    retryButtonText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
 

@@ -134,7 +134,8 @@ export function useCactusLLM(): UseCactusLLMState {
     const clearMessages = useCallback(() => {
         setMessages([]);
         setCurrentDirection(null);
-    }, []);
+        service.clearHistory();
+    }, [service]);
 
     // Cleanup on unmount
     useEffect(() => {

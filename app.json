@@ -17,7 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mbtatransitapp",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to show nearby transit stops and real-time arrivals."
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to show nearby transit stops and real-time arrivals.",
+        "NSCameraUsageDescription": "This app uses your camera for AR indoor navigation to show directional arrows.",
+        "NSMotionUsageDescription": "This app uses motion sensors for compass-based navigation."
       }
     },
     "android": {
@@ -30,7 +32,9 @@
       "package": "com.mbtatransitapp",
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "HIGH_SAMPLING_RATE_SENSORS"
       ],
       "config": {
         "googleMaps": {
@@ -44,7 +48,19 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow MBTA Transit to use your camera for AR navigation."
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Allow MBTA Transit to access motion sensors for compass navigation."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

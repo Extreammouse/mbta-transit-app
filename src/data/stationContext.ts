@@ -68,34 +68,47 @@ Response: "Great, you've arrived at your destination! [ARRIVED]"
 Remember: ALWAYS end with ONE direction tag like [STRAIGHT], [LEFT], [RIGHT], [BACK], [UP], [DOWN], or [ARRIVED].`;
 
 export const STATION_DATA = {
-    'park-street': {
-        id: 'park-street',
-        name: 'Park Street',
-        lines: ['Red', 'Green-B', 'Green-C', 'Green-D', 'Green-E'],
-        entrances: ['Tremont Street'],
-        landmarks: ['Boston Common', 'State House'],
-    },
-    'downtown-crossing': {
-        id: 'downtown-crossing',
-        name: 'Downtown Crossing',
-        lines: ['Red', 'Orange'],
-        entrances: ['Washington Street', 'Summer Street'],
-        landmarks: ["Macy's", 'Primark'],
-    },
-    'south-station': {
-        id: 'south-station',
-        name: 'South Station',
-        lines: ['Red', 'Silver', 'Commuter Rail'],
-        entrances: ['Atlantic Avenue', 'Summer Street'],
-        landmarks: ['Bus Terminal', 'Amtrak'],
-    },
-    'state': {
-        id: 'state',
-        name: 'State',
-        lines: ['Blue', 'Orange'],
-        entrances: ['State Street', 'Devonshire Street'],
-        landmarks: ['Old State House', 'Financial District'],
-    },
+  'park-street': {
+    id: 'park-street',
+    name: 'Park Street',
+    lines: ['Red', 'Green-B', 'Green-C', 'Green-D', 'Green-E'],
+    entrances: ['Tremont Street'],
+    landmarks: ['Boston Common', 'State House'],
+  },
+  'downtown-crossing': {
+    id: 'downtown-crossing',
+    name: 'Downtown Crossing',
+    lines: ['Red', 'Orange'],
+    entrances: ['Washington Street', 'Summer Street'],
+    landmarks: ["Macy's", 'Primark'],
+  },
+  'south-station': {
+    id: 'south-station',
+    name: 'South Station',
+    lines: ['Red', 'Silver', 'Commuter Rail'],
+    entrances: ['Atlantic Avenue', 'Summer Street'],
+    landmarks: ['Bus Terminal', 'Amtrak'],
+  },
+  'state': {
+    id: 'state',
+    name: 'State',
+    lines: ['Blue', 'Orange'],
+    entrances: ['State Street', 'Devonshire Street'],
+    landmarks: ['Old State House', 'Financial District'],
+  },
 };
 
 export type StationId = keyof typeof STATION_DATA;
+
+/**
+ * Get station-specific context for the LLM
+ */
+export function getStationContext(stationId: StationId): { name: string; details: string } | null {
+  const station = STATION_DATA[stationId];
+  if (!station) return null;
+
+  return {
+    name: station.name,
+    details: `Current station: ${station.name}. Available lines: ${station.lines.join(', ')}. Entrances: ${station.entrances.join(', ')}.`
+  };
+}
