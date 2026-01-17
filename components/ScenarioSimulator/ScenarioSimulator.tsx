@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Slider from '@react-native-community/slider';
-import { MBTA_COLORS } from '../../constants/Colors';
-import { ConfidenceLevel, WalkingSpeed } from '../../src/types/mbta';
-import { simulateDelay, calculateConfidence, getSpeedDescription } from '../../src/services/transfer-calc';
-import { ConfidenceBadge } from '../ConfidenceBadge/ConfidenceBadge';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { MBTA_COLORS } from '../../constants/Colors';
+import { getLLMNavigationService } from '../../src/services/llmNavigationService';
+import { calculateConfidence, getSpeedDescription, simulateDelay } from '../../src/services/transfer-calc';
+import { ConfidenceLevel, WalkingSpeed } from '../../src/types/mbta';
+import { ConfidenceBadge } from '../ConfidenceBadge/ConfidenceBadge';
 
 interface ScenarioSimulatorProps {
     originalBufferSeconds: number;
@@ -13,6 +14,8 @@ interface ScenarioSimulatorProps {
     onSpeedChange: (speed: WalkingSpeed) => void;
     onDelayChange?: (delayMinutes: number) => void;
     onConfidenceChange?: (confidence: ConfidenceLevel) => void;
+    originName?: string;
+    destinationName?: string;
 }
 
 export function ScenarioSimulator({
@@ -21,11 +24,15 @@ export function ScenarioSimulator({
     onSpeedChange,
     onDelayChange,
     onConfidenceChange,
+    originName,
+    destinationName,
 }: ScenarioSimulatorProps) {
     const [delayMinutes, setDelayMinutes] = useState(0);
     const [currentConfidence, setCurrentConfidence] = useState<ConfidenceLevel>(
         calculateConfidence(originalBufferSeconds)
     );
+    const [aiResponse, setAiResponse] = useState<string | null>(null);
+    const [aiLoading, setAiLoading] = useState(false);
 
     useEffect(() => {
         const { newConfidence, newBuffer } = simulateDelay(
@@ -34,7 +41,46 @@ export function ScenarioSimulator({
         );
         setCurrentConfidence(newConfidence);
         onConfidenceChange?.(newConfidence);
-    }, [delayMinutes, originalBufferSeconds]);
+
+        // Get AI insight when confidence changes
+        getAIInsight(newConfidence, delayMinutes);
+    }, [delayMinutes, originalBufferSeconds, walkingSpeed]);
+
+    // Get AI-powered connection status
+    const getAIInsight = async (confidence: ConfidenceLevel, delay: number) => {
+        setAiLoading(true);
+        try {
+            const llmService = getLLMNavigationService();
+
+            // Build context for AI
+            let context = `Connection analysis: `;
+            if (originName && destinationName) {
+                context += `Traveling from ${originName} to ${destinationName}. `;
+            }
+            context += `Walking speed: ${walkingSpeed}. `;
+            context += `Buffer time: ${Math.round(originalBufferSeconds / 60)} minutes. `;
+            if (delay > 0) {
+                context += `Delay: ${delay} minutes. `;
+            }
+            context += `Current connection confidence: ${confidence}. `;
+            context += `Give a brief (1 sentence) tip about making this connection.`;
+
+            const response = await llmService.getDirections(context);
+            setAiResponse(response.text);
+        } catch (error) {
+            // Fall back to static response
+            setAiResponse(getStaticResponse(confidence));
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
+    // Fallback static responses
+    const getStaticResponse = (confidence: ConfidenceLevel): string => {
+        if (confidence === 'likely') return 'You should make your connection comfortably.';
+        if (confidence === 'risky') return 'Tight timing - be prepared to walk quickly.';
+        return 'You may miss this connection. Consider alternatives.';
+    };
 
     const handleDelayChange = (value: number) => {
         const minutes = Math.round(value);
@@ -125,16 +171,25 @@ export function ScenarioSimulator({
                 </View>
             </View>
 
-            {/* Result Preview */}
+            {/* AI-Powered Connection Status */}
             <View style={styles.resultSection}>
-                <Text style={styles.resultLabel}>Connection Status:</Text>
+                <View style={styles.resultHeader}>
+                    <Text style={styles.resultLabel}>Connection Status</Text>
+                    <Ionicons name="sparkles" size={16} color={MBTA_COLORS.orange} />
+                    <Text style={styles.aiLabel}>AI</Text>
+                </View>
                 <View style={styles.resultContent}>
                     <ConfidenceBadge confidence={currentConfidence} size="large" />
-                    <Text style={styles.resultDescription}>
-                        {currentConfidence === 'likely' && 'You should make your connection comfortably.'}
-                        {currentConfidence === 'risky' && 'Tight timing - be prepared to walk quickly.'}
-                        {currentConfidence === 'unlikely' && 'You may miss this connection. Consider alternatives.'}
-                    </Text>
+                    {aiLoading ? (
+                        <View style={styles.aiLoadingContainer}>
+                            <ActivityIndicator size="small" color={MBTA_COLORS.orange} />
+                            <Text style={styles.aiLoadingText}>AI analyzing...</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.resultDescription}>
+                            {aiResponse || getStaticResponse(currentConfidence)}
+                        </Text>
+                    )}
                 </View>
             </View>
         </View>
@@ -251,16 +306,41 @@ const styles = StyleSheet.create({
         padding: 16,
         marginTop: 8,
     },
+    resultHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 12,
+    },
     resultLabel: {
         fontSize: 14,
         fontWeight: '600',
         color: MBTA_COLORS.text,
-        marginBottom: 12,
+    },
+    aiLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: MBTA_COLORS.orange,
+        backgroundColor: 'rgba(237, 139, 0, 0.1)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
     },
     resultContent: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 16,
+    },
+    aiLoadingContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    aiLoadingText: {
+        fontSize: 14,
+        color: MBTA_COLORS.textLight,
+        fontStyle: 'italic',
     },
     resultDescription: {
         flex: 1,

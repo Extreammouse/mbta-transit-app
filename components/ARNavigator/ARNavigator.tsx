@@ -41,7 +41,8 @@ type CameraPermissionStatus = 'undetermined' | 'granted' | 'denied';
 export function ARNavigator({ isDemoMode = true, onClose }: ARNavigatorProps) {
     const [cameraReady, setCameraReady] = useState(false);
     const [cameraError, setCameraError] = useState<string | null>(null);
-    const [chatCollapsed, setChatCollapsed] = useState(false);
+    const [chatCollapsed, setChatCollapsed] = useState(true); // Start collapsed
+    const [showChat, setShowChat] = useState(false); // Toggle chat visibility
     const [permissionStatus, setPermissionStatus] = useState<CameraPermissionStatus>('undetermined');
     const [isRequestingPermission, setIsRequestingPermission] = useState(false);
     const [CameraView, setCameraView] = useState<React.ComponentType<any> | null>(null);
@@ -82,7 +83,7 @@ export function ARNavigator({ isDemoMode = true, onClose }: ARNavigatorProps) {
         transform: [{ scale: pulse.value }],
     }));
 
-    // Initialize demo mode
+    // Initialize demo mode and LLM
     useEffect(() => {
         if (isDemoMode) {
             demoMode.enableDemo('park-to-red-sb');
@@ -91,12 +92,10 @@ export function ARNavigator({ isDemoMode = true, onClose }: ARNavigatorProps) {
         llm.initialize();
     }, [isDemoMode]);
 
-    // Load camera for real AR mode
+    // Load camera for ALL modes (including demo for real camera background)
     useEffect(() => {
-        if (!isDemoMode) {
-            loadCameraAndRequestPermission();
-        }
-    }, [isDemoMode]);
+        loadCameraAndRequestPermission();
+    }, []);
 
     async function loadCameraAndRequestPermission() {
         setIsRequestingPermission(true);
@@ -135,24 +134,22 @@ export function ARNavigator({ isDemoMode = true, onClose }: ARNavigatorProps) {
 
     // Render camera or demo background
     const renderBackground = () => {
-        if (isDemoMode) {
-            // Demo mode background
+        // Try to show camera in all modes
+        if (cameraReady && CameraView) {
+            const CameraComponent = CameraView;
             return (
-                <View style={styles.demoBackground}>
-                    <View style={styles.demoBackgroundOverlay} />
-                    <View style={styles.demoGrid}>
-                        {[...Array(8)].map((_, i) => (
-                            <View
-                                key={i}
-                                style={[
-                                    styles.gridLine,
-                                    { top: `${12.5 * i}%`, opacity: 0.1 + (i * 0.05) }
-                                ]}
-                            />
-                        ))}
-                    </View>
-                    <Text style={styles.demoLabel}>📹 DEMO MODE</Text>
-                </View>
+                <>
+                    <CameraComponent
+                        style={StyleSheet.absoluteFill}
+                        facing="back"
+                    />
+                    {/* Demo overlay on top of camera */}
+                    {isDemoMode && (
+                        <View style={[StyleSheet.absoluteFill, styles.demoOverlay]}>
+                            <Text style={styles.demoLabel}>📹 DEMO MODE - LIVE CAMERA</Text>
+                        </View>
+                    )}
+                </>
             );
         }
 
@@ -243,8 +240,18 @@ export function ARNavigator({ isDemoMode = true, onClose }: ARNavigatorProps) {
                 </View>
             )}
 
-            {/* Chat Interface */}
-            {!isDemoMode && (
+            {/* Chat Toggle Button */}
+            <TouchableOpacity
+                style={styles.chatToggleButton}
+                onPress={() => setShowChat(!showChat)}
+            >
+                <Text style={styles.chatToggleText}>
+                    {showChat ? '✕ Close Chat' : '💬 Ask AI'}
+                </Text>
+            </TouchableOpacity>
+
+            {/* Chat Interface - Available in all modes */}
+            {showChat && (
                 <View style={styles.chatContainer}>
                     <ChatInterface
                         messages={llm.messages}
@@ -391,6 +398,25 @@ const styles = StyleSheet.create({
     retryButtonText: {
         color: '#FFF',
         fontSize: 16,
+        fontWeight: '600',
+    },
+    demoOverlay: {
+        backgroundColor: 'rgba(28, 52, 95, 0.2)',
+    },
+    chatToggleButton: {
+        position: 'absolute',
+        top: 60,
+        left: 16,
+        backgroundColor: MBTA_COLORS.orange,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    chatToggleText: {
+        color: '#FFF',
+        fontSize: 14,
         fontWeight: '600',
     },
 });

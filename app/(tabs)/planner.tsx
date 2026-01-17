@@ -1,25 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-    View,
-    StyleSheet,
-    Text,
-    ScrollView,
-    TouchableOpacity,
     ActivityIndicator,
     RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
 
-import { StopSelector } from '@/components/StopSelector/StopSelector';
-import { TransferCard } from '@/components/TransferCard/TransferCard';
 import { ConfidenceBadge } from '@/components/ConfidenceBadge/ConfidenceBadge';
 import { ScenarioSimulator } from '@/components/ScenarioSimulator/ScenarioSimulator';
+import { StopSelector } from '@/components/StopSelector/StopSelector';
+import { TransferCard } from '@/components/TransferCard/TransferCard';
 import { MBTA_COLORS } from '@/constants/Colors';
+import { getLLMNavigationService } from '@/src/services/llmNavigationService';
 import { mbtaApi } from '@/src/services/mbta-api';
-import { Route, Stop, Prediction, WalkingSpeed, ConfidenceLevel } from '@/src/types/mbta';
-import { calculateTransfer, formatWalkingTime } from '@/src/services/transfer-calc';
-import { formatTime, minutesUntil, getRouteColor } from '@/src/utils/helpers';
+import { calculateTransfer } from '@/src/services/transfer-calc';
+import { Prediction, Route, Stop, WalkingSpeed } from '@/src/types/mbta';
+import { getRouteColor, minutesUntil } from '@/src/utils/helpers';
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,13 @@ function TripPlannerScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showScenarios, setShowScenarios] = useState(false);
+
+    // AI Insights state
+    const [showAIInsights, setShowAIInsights] = useState(false);
+    const [aiQuery, setAiQuery] = useState('');
+    const [aiResponse, setAiResponse] = useState<string | null>(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiModelReady, setAiModelReady] = useState(false);
 
     // Load initial data
     const loadData = useCallback(async () => {
@@ -80,6 +88,67 @@ function TripPlannerScreen() {
         const interval = setInterval(loadPredictions, 15000);
         return () => clearInterval(interval);
     }, [loadPredictions]);
+
+    // Initialize AI model
+    useEffect(() => {
+        const initAI = async () => {
+            const llmService = getLLMNavigationService();
+            const ready = await llmService.initialize();
+            setAiModelReady(ready);
+        };
+        initAI();
+    }, []);
+
+    // Handle AI query for connection insights
+    const handleAIQuery = async () => {
+        if (!aiQuery.trim()) return;
+
+        setAiLoading(true);
+        try {
+            const llmService = getLLMNavigationService();
+
+            // Build context about the current trip
+            let context = aiQuery;
+            if (selectedOrigin && selectedDestination) {
+                const transferInfo = getTransferInfo();
+                context = `I'm traveling from ${selectedOrigin.attributes.name} to ${selectedDestination.attributes.name}. `;
+                if (transferInfo) {
+                    context += `Walking time is about ${transferInfo.walkingTimeSeconds / 60} minutes. `;
+                    context += `Transfer confidence is ${transferInfo.confidence}. `;
+                }
+                if (originPredictions.length > 0) {
+                    const nextTime = minutesUntil(originPredictions[0].attributes.departure_time || originPredictions[0].attributes.arrival_time || '');
+                    context += `Next departure in ${nextTime} minutes. `;
+                }
+                context += aiQuery;
+            }
+
+            const response = await llmService.getDirections(context);
+            setAiResponse(response.text);
+        } catch (error) {
+            setAiResponse('Sorry, I had trouble processing that. Please try again.');
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
+    // Quick AI insights about current connection
+    const getQuickInsight = async () => {
+        if (!selectedOrigin || !selectedDestination) return;
+
+        setAiLoading(true);
+        const transferInfo = getTransferInfo();
+        try {
+            const llmService = getLLMNavigationService();
+            const query = `Give me a quick tip about transferring from ${selectedOrigin.attributes.name} to ${selectedDestination.attributes.name}. Is it an easy transfer?`;
+            const response = await llmService.getDirections(query);
+            setAiResponse(response.text);
+        } catch (error) {
+            setAiResponse('AI insights temporarily unavailable.');
+        } finally {
+            setAiLoading(false);
+        }
+    };
 
     const handleSwapStops = () => {
         const temp = selectedOrigin;
@@ -230,6 +299,8 @@ function TripPlannerScreen() {
                         <View style={styles.scenarioToggleContent}>
                             <Ionicons name="flask-outline" size={20} color={MBTA_COLORS.navy} />
                             <Text style={styles.scenarioToggleText}>What-If Scenarios</Text>
+                            <Ionicons name="sparkles" size={14} color={MBTA_COLORS.orange} />
+                            <Text style={styles.aiPoweredBadge}>AI</Text>
                         </View>
                         <Ionicons
                             name={showScenarios ? 'chevron-up' : 'chevron-down'}
@@ -243,12 +314,12 @@ function TripPlannerScreen() {
                             originalBufferSeconds={transferInfo.bufferSeconds}
                             walkingSpeed={walkingSpeed}
                             onSpeedChange={setWalkingSpeed}
+                            originName={selectedOrigin.attributes.name}
+                            destinationName={selectedDestination.attributes.name}
                         />
                     )}
                 </View>
             )}
-
-            {/* Empty State */}
             {!selectedOrigin && !selectedDestination && (
                 <View style={styles.emptyState}>
                     <View style={styles.emptyIcon}>
@@ -395,6 +466,15 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: MBTA_COLORS.navy,
     },
+    aiPoweredBadge: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: MBTA_COLORS.orange,
+        backgroundColor: 'rgba(237, 139, 0, 0.1)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
     emptyState: {
         alignItems: 'center',
         padding: 40,
@@ -414,5 +494,71 @@ const styles = StyleSheet.create({
         color: MBTA_COLORS.textLight,
         textAlign: 'center',
         lineHeight: 22,
+    },
+    aiLoadingBadge: {
+        fontSize: 10,
+        color: MBTA_COLORS.orange,
+        backgroundColor: 'rgba(237, 139, 0, 0.1)',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 8,
+        marginLeft: 8,
+    },
+    aiInsightsCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 16,
+    },
+    quickInsightButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: MBTA_COLORS.orange,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        gap: 8,
+        marginBottom: 16,
+    },
+    quickInsightText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    aiQueryContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F5F5F5',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        marginBottom: 12,
+    },
+    aiQueryInput: {
+        flex: 1,
+        paddingVertical: 12,
+        fontSize: 15,
+        color: MBTA_COLORS.text,
+    },
+    aiSendButton: {
+        padding: 8,
+    },
+    aiResponseContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: 'rgba(237, 139, 0, 0.08)',
+        borderRadius: 8,
+        padding: 12,
+        gap: 10,
+    },
+    aiThinking: {
+        fontSize: 14,
+        color: MBTA_COLORS.textLight,
+        fontStyle: 'italic',
+    },
+    aiResponseText: {
+        flex: 1,
+        fontSize: 14,
+        color: MBTA_COLORS.text,
+        lineHeight: 20,
     },
 });
