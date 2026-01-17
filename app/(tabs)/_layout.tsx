@@ -1,18 +1,28 @@
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Ionicons } from '@expo/vector-icons';
 import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet, View, Text } from 'react-native';
 
-import Colors from '@/constants/Colors';
+import Colors, { MBTA_COLORS } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
+  name: React.ComponentProps<typeof Ionicons>['name'];
   color: string;
 }) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
+  return <Ionicons size={24} style={{ marginBottom: -2 }} {...props} />;
+}
+
+function HeaderLogo() {
+  return (
+    <View style={styles.headerLogo}>
+      <View style={styles.logoIcon}>
+        <Ionicons name="train" size={20} color="#FFFFFF" />
+      </View>
+      <Text style={styles.logoText}>MBTA Transit</Text>
+    </View>
+  );
 }
 
 export default function TabLayout() {
@@ -21,25 +31,43 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
+        tabBarActiveTintColor: MBTA_COLORS.navy,
+        tabBarInactiveTintColor: MBTA_COLORS.textLight,
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',
+          borderTopColor: '#E5E7EB',
+          paddingTop: 8,
+          paddingBottom: 8,
+          height: 65,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        headerStyle: {
+          backgroundColor: MBTA_COLORS.navy,
+        },
+        headerTintColor: '#FFFFFF',
+        headerTitleStyle: {
+          fontWeight: '700',
+        },
         headerShown: useClientOnlyValue(false, true),
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: 'Map',
+          headerTitle: () => <HeaderLogo />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,
           headerRight: () => (
             <Link href="/modal" asChild>
               <Pressable>
                 {({ pressed }) => (
-                  <FontAwesome
-                    name="info-circle"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={26}
+                    color="#FFFFFF"
+                    style={{ marginRight: 16, opacity: pressed ? 0.6 : 1 }}
                   />
                 )}
               </Pressable>
@@ -48,12 +76,50 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="planner"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: 'Plan Trip',
+          tabBarIcon: ({ color }) => <TabBarIcon name="swap-horizontal" color={color} />,
+          headerTitle: 'Trip Planner',
+        }}
+      />
+      <Tabs.Screen
+        name="connections"
+        options={{
+          title: 'Live',
+          tabBarIcon: ({ color }) => <TabBarIcon name="pulse" color={color} />,
+          headerTitle: 'Live Connections',
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <TabBarIcon name="settings-outline" color={color} />,
+          headerTitle: 'Settings',
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  headerLogo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+});
