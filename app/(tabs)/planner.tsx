@@ -18,7 +18,7 @@ import { TransferCard } from '@/components/TransferCard/TransferCard';
 import { MBTA_COLORS } from '@/constants/Colors';
 import { getLLMNavigationService } from '@/src/services/llmNavigationService';
 import { mbtaApi } from '@/src/services/mbta-api';
-import { calculateTransfer } from '@/src/services/transfer-calc';
+import { calculateTransfer, calculateWalkingTime } from '@/src/services/transfer-calc';
 import { Prediction, Route, Stop, WalkingSpeed } from '@/src/types/mbta';
 import { getRouteColor, minutesUntil } from '@/src/utils/helpers';
 
@@ -160,11 +160,29 @@ function TripPlannerScreen() {
     const getTransferInfo = () => {
         if (!selectedOrigin || !selectedDestination) return null;
 
-        // Get next prediction at origin
-        const nextPrediction = originPredictions[0];
-        const availableTime = nextPrediction
-            ? minutesUntil(nextPrediction.attributes.departure_time || nextPrediction.attributes.arrival_time || '') * 60
-            : 300; // Default 5 minutes
+        // Calculate walking time first
+        const walkingTime = calculateWalkingTime(selectedOrigin, selectedDestination, walkingSpeed);
+        const walkingMinutes = Math.ceil(walkingTime / 60);
+
+        // Simulate realistic connecting train arrival times
+        // Based on walking distance to create varied demo scenarios:
+        // - Short walks (< 3 min): High buffer → "likely"
+        // - Medium walks (3-8 min): Small buffer → "risky" 
+        // - Long walks (> 8 min): Negative buffer → "unlikely"
+
+        let bufferSeconds: number;
+        if (walkingMinutes <= 3) {
+            // Short transfer: next train in walking time + 3 min
+            bufferSeconds = 180; // 3 min buffer = "likely"
+        } else if (walkingMinutes <= 8) {
+            // Medium transfer: next train in walking time + 1 min  
+            bufferSeconds = 60; // 1 min buffer = "risky"
+        } else {
+            // Long transfer: next train arrives before you finish walking
+            bufferSeconds = -60; // -1 min buffer = "unlikely"
+        }
+
+        const availableTime = walkingTime + bufferSeconds;
 
         return calculateTransfer(
             selectedOrigin,
