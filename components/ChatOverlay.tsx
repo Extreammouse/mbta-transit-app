@@ -15,6 +15,7 @@ import {
     View
 } from 'react-native';
 import { ChatMessage, chatService } from '../src/services/ChatService';
+import { elevenLabsService } from '../src/services/ElevenLabsService';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ export default function ChatOverlay() {
     const [inputText, setInputText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isOffline, setIsOffline] = useState(false);
+    const [isSupportLoading, setIsSupportLoading] = useState(false);
     const flatListRef = useRef<FlatList>(null);
 
     useEffect(() => {
@@ -125,6 +127,28 @@ export default function ChatOverlay() {
                                         <Text style={styles.offlineText}>Offline</Text>
                                     </View>
                                 )}
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        if (isSupportLoading) return;
+                                        setIsSupportLoading(true);
+                                        try {
+                                            await elevenLabsService.playSupportMessage();
+                                        } finally {
+                                            setIsSupportLoading(false);
+                                        }
+                                    }}
+                                    style={styles.supportBadge}
+                                >
+                                    {isSupportLoading ? (
+                                        <ActivityIndicator size="small" color="white" />
+                                    ) : (
+                                        <>
+                                            <Ionicons name="headset" size={12} color="white" />
+                                            <Text style={styles.supportText}>Call Support</Text>
+                                        </>
+                                    )}
+                                </TouchableOpacity>
+
                                 <TouchableOpacity
                                     onPress={() => setIsVisible(false)}
                                     style={styles.closeButton}
@@ -271,6 +295,20 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     offlineText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    supportBadge: {
+        backgroundColor: '#007A33', // MBTA Green Line color (Customer Support feels "safe/go")
+        paddingHorizontal: 8,
+        paddingVertical: 5,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    supportText: {
         color: 'white',
         fontWeight: 'bold',
         fontSize: 12,
