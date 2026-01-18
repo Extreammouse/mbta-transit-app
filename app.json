@@ -60,7 +60,8 @@
         {
           "motionPermission": "Allow MBTA Transit to access motion sensors for compass navigation."
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true

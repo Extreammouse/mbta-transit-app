@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="e8bc6258-015b-4686-ad99-3c6159e6b718" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/app/(tabs)/chatbot.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/components/Chatbot/Chatbot.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/ChatbotService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/DataSyncService.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/VectorStore.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/utils/ETACalculator.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/utils/TransferAssistant.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.json" beforeDir="false" afterPath="$PROJECT_DIR$/app.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/_layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/_layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/planner.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/planner.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/ARNavigator/ARNavigator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/ARNavigator/ARNavigator.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/Map/MBTAMap.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/Map/MBTAMap.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/ScenarioSimulator/ScenarioSimulator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/ScenarioSimulator/ScenarioSimulator.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/llmNavigationService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/llmNavigationService.ts" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3
+}</component>
+  <component name="ProjectId" id="38OqvWYiesBl1ejTxLZVM4ZB5Js" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "Merging serchan",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/home/ujjwal/.gemini/antigravity/scratch/mbta-transit-app"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="e8bc6258-015b-4686-ad99-3c6159e6b718" name="Changes" comment="" />
+      <created>1768681196489</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1768681196489</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
