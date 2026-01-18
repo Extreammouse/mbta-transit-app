@@ -4,12 +4,12 @@
     "slug": "mbta-transit-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/MBTA.svg.png",
     "scheme": "mbtatransitapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/MBTA.svg.png",
       "resizeMode": "contain",
       "backgroundColor": "#1C345F"
     },
@@ -24,8 +24,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#1C345F"
+        "foregroundImage": "./assets/images/MBTA.svg.png",
+        "backgroundColor": "#FFFFFF"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,

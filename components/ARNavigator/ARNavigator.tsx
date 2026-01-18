@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     chatToggleButton: {
         position: 'absolute',
         top: 60,
-        left: 16,
+        right: 16,
         backgroundColor: MBTA_COLORS.orange,
         paddingHorizontal: 16,
         paddingVertical: 10,

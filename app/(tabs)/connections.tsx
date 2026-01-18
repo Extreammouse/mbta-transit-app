@@ -65,7 +65,7 @@ function LiveConnectionsScreen() {
                 setSelectedStop(popularStop);
             }
         } catch (e) {
-            console.error('Failed to load data:', e);
+            // Silent fail for offline mode
         } finally {
             setLoading(false);
         }
@@ -80,7 +80,7 @@ function LiveConnectionsScreen() {
             setPredictions(preds);
             setLastUpdated(new Date());
         } catch (e) {
-            console.error('Failed to load predictions:', e);
+            // Silent fail for offline mode
         } finally {
             setRefreshing(false);
         }

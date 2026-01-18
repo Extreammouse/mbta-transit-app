@@ -53,30 +53,27 @@ export function ScenarioSimulator({
         previousConfidence.current = newConfidence;
     }, [originalBufferSeconds, delayMinutes]);
 
-    // Only call AI when user explicitly interacts (changes delay or walking speed)
+    // AI calls disabled - using static responses only for reliable offline experience
+    // The gemma-3-1b model produces unreliable output
+    // If you want to re-enable AI, uncomment the useEffect below
+    /*
     useEffect(() => {
-        // Skip the initial mount - only call AI after user interaction
         if (!hasUserInteracted.current) {
             return;
         }
-
-        // Clear any existing timer
         if (debounceTimer.current) {
             clearTimeout(debounceTimer.current);
         }
-
-        // Debounce AI call by 1 second after user stops adjusting
         debounceTimer.current = setTimeout(() => {
             getAIInsight(currentConfidence, delayMinutes);
         }, 1000);
-
-        // Cleanup timer on unmount
         return () => {
             if (debounceTimer.current) {
                 clearTimeout(debounceTimer.current);
             }
         };
-    }, [delayMinutes, walkingSpeed]); // Only trigger on user-controlled values
+    }, [delayMinutes, walkingSpeed]);
+    */
 
     // Get AI-powered connection status
     const getAIInsight = async (confidence: ConfidenceLevel, delay: number) => {

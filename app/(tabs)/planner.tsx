@@ -58,7 +58,7 @@ function TripPlannerScreen() {
             );
             setStops(uniqueStops);
         } catch (e) {
-            console.error('Failed to load data:', e);
+            // Silent fail for offline mode
         } finally {
             setLoading(false);
         }
@@ -72,7 +72,8 @@ function TripPlannerScreen() {
             const predictions = await mbtaApi.getPredictions(selectedOrigin.id);
             setOriginPredictions(predictions);
         } catch (e) {
-            console.error('Failed to load predictions:', e);
+            // Silent fail for offline mode - predictions will just stay empty
+            // This prevents error spam in the console when offline
         } finally {
             setRefreshing(false);
         }

@@ -43,7 +43,7 @@ function MapScreen() {
       setStops(uniqueStops);
 
     } catch (e) {
-      console.error('Failed to load data:', e);
+      // Silent fail for offline mode
       setError('Failed to load transit data. Please try again.');
     } finally {
       setLoading(false);

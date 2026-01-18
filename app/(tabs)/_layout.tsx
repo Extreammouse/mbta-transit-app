@@ -14,11 +14,17 @@ function TabBarIcon(props: {
   return <Ionicons size={24} style={{ marginBottom: -2 }} {...props} />;
 }
 
+import { Image } from 'react-native';
+
 function HeaderLogo() {
   return (
     <View style={styles.headerLogo}>
-      <View style={styles.logoIcon}>
-        <Ionicons name="train" size={20} color="#FFFFFF" />
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('@/assets/images/MBTA.svg.png')}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
       </View>
       <Text style={styles.logoText}>MBTA Transit</Text>
     </View>
@@ -130,6 +136,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  logoContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 26,
+    height: 26,
   },
   logoText: {
     fontSize: 18,
