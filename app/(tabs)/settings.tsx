@@ -1,25 +1,26 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  View,
-  StyleSheet,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
   Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 import { MBTA_COLORS } from '@/constants/Colors';
-import { WalkingSpeed } from '@/src/types/mbta';
-import { getSpeedDescription } from '@/src/services/transfer-calc';
 import { APP_NAME, APP_VERSION } from '@/constants/Config';
+import { useTheme } from '@/context/ThemeContext';
+import { getSpeedDescription } from '@/src/services/transfer-calc';
+import { WalkingSpeed } from '@/src/types/mbta';
 
 export default function SettingsScreen() {
   const [walkingSpeed, setWalkingSpeed] = useState<WalkingSpeed>('normal');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showAlerts, setShowAlerts] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const { isDarkMode, setDarkMode } = useTheme();
 
   const speedOptions: { value: WalkingSpeed; label: string; description: string }[] = [
     { value: 'slow', label: 'Slow', description: getSpeedDescription('slow') },
@@ -126,7 +127,7 @@ export default function SettingsScreen() {
             <Text style={styles.settingDescription}>Use dark theme</Text>
           </View>
           <Switch
-            value={darkMode}
+            value={isDarkMode}
             onValueChange={setDarkMode}
             trackColor={{ false: '#D1D5DB', true: MBTA_COLORS.navy }}
             ios_backgroundColor="#D1D5DB"

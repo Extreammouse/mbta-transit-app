@@ -7,8 +7,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
 import Colors, { MBTA_COLORS } from '@/constants/Colors';
+import { AppThemeProvider, useTheme } from '@/context/ThemeContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -56,14 +56,16 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <RootLayoutNav />
-    </QueryClientProvider>
+    <AppThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <RootLayoutNav />
+      </QueryClientProvider>
+    </AppThemeProvider>
   );
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useTheme();
 
   // Custom theme with MBTA colors
   const customTheme = {
@@ -71,10 +73,10 @@ function RootLayoutNav() {
     colors: {
       ...(colorScheme === 'dark' ? DarkTheme.colors : DefaultTheme.colors),
       primary: MBTA_COLORS.navy,
-      background: MBTA_COLORS.background,
-      card: Colors[colorScheme ?? 'light'].card,
-      text: Colors[colorScheme ?? 'light'].text,
-      border: Colors[colorScheme ?? 'light'].border,
+      background: colorScheme === 'dark' ? Colors.dark.background : Colors.light.background,
+      card: Colors[colorScheme].card,
+      text: Colors[colorScheme].text,
+      border: Colors[colorScheme].border,
     },
   };
 
@@ -97,3 +99,4 @@ function RootLayoutNav() {
     </ThemeProvider>
   );
 }
+

@@ -111,7 +111,11 @@ export default function ChatOverlay() {
                 visible={isVisible}
                 onRequestClose={() => setIsVisible(false)}
             >
-                <View style={styles.modalOverlay}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.modalOverlay}
+                    keyboardVerticalOffset={0}
+                >
                     <View style={styles.modalContent}>
                         {/* Header */}
                         <View style={styles.header}>
@@ -164,7 +168,10 @@ export default function ChatOverlay() {
                             data={messages}
                             keyExtractor={item => item.id}
                             contentContainerStyle={styles.messageList}
+                            style={styles.messageListContainer}
                             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                            onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                            keyboardShouldPersistTaps="handled"
                             renderItem={({ item }) => (
                                 <View style={[
                                     styles.messageBubble,
@@ -179,11 +186,7 @@ export default function ChatOverlay() {
                         />
 
                         {/* Input Area */}
-                        <KeyboardAvoidingView
-                            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-                            style={styles.inputContainer}
-                        >
+                        <View style={styles.inputContainer}>
                             <TextInput
                                 style={styles.input}
                                 value={inputText}
@@ -204,13 +207,14 @@ export default function ChatOverlay() {
                                     <Ionicons name="send" size={18} color="white" />
                                 )}
                             </TouchableOpacity>
-                        </KeyboardAvoidingView>
+                        </View>
                     </View>
-                </View>
+                </KeyboardAvoidingView>
             </Modal>
         </>
     );
 }
+
 
 const styles = StyleSheet.create({
     fab: {
@@ -312,6 +316,9 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 12,
+    },
+    messageListContainer: {
+        flex: 1,
     },
     messageList: {
         padding: 16,
