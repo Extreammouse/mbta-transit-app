@@ -1,234 +1,177 @@
-# MBTA Transit Companion App
+# MBTA Transit Companion
 
-A React Native mobile app for the Massachusetts Bay Transportation Authority (MBTA) transit system, featuring real-time predictions, interactive maps, transfer guidance, and intelligent trip planning.
+A React Native mobile application for MBTA (Massachusetts Bay Transportation Authority) transit navigation with AR indoor navigation, real-time predictions, and transfer guidance.
 
-![MBTA Logo](https://www.mbta.com/themes/custom/mbta_bootstrap/logo.svg)
+## Features
 
-## ✨ Features
+- **Interactive Map**: View all MBTA stations and routes on an interactive Google Map
+- **Trip Planner**: Plan transfers between stations with confidence indicators (Likely/Risky/Unlikely)
+- **Live Connections**: Real-time arrival predictions for selected stations
+- **AR Navigation Demo**: Augmented reality indoor navigation with step-by-step directions
+- **What-If Scenarios**: Simulate delays to see how they affect your transfer
+- **Offline Support**: Works without internet using cached station data
 
-### 🗺️ Interactive Map
-- Full Boston area map with MBTA subway routes
-- Color-coded route polylines (Red, Orange, Blue, Green lines)
-- Tappable stop markers with station information
-- Origin/destination selection with visual indicators
-- Zoom controls and user location tracking
+## Prerequisites
 
-### 🚶 Transfer Guidance
-- Calculate walking time between platforms using GPS coordinates
-- Adjustable walking speed (Slow/Normal/Fast)
-- Platform buffer time estimation (30s for stairs, escalators)
-- Visual transfer instructions with animations
+Before running the app, ensure you have the following installed:
 
-### 📡 Live Connection Finder
-- Real-time arrival predictions from MBTA API
-- Auto-refresh every 15 seconds
-- Grouped by route with color coding
-- Countdown timers with urgency indicators
-- Pull-to-refresh support
+- **Node.js** (v18 or higher)
+- **npm** or **yarn**
+- **Expo CLI**: Install with `npm install -g expo-cli`
+- **Xcode** (for iOS development, Mac only)
+- **Android Studio** (for Android development)
+- **CocoaPods** (for iOS): Install with `sudo gem install cocoapods`
 
-### 🎯 Confidence Indicators
-Visual badges for transfer success probability:
-- **Likely** (Green) - >3 min buffer time
-- **Risky** (Amber) - 1-3 min buffer time  
-- **Unlikely** (Red) - <1 min buffer time
+## Installation
 
-### 🧪 What-If Scenarios
-- Simulate arriving late with delay slider (+0 to +15 min)
-- Adjust walking speed to see impact on transfers
-- Real-time confidence recalculation
-- Alternative route suggestions
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Extreammouse/mbta-transit-app.git
+   cd mbta-transit-app
+   ```
 
-## 🚀 Getting Started
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-### Prerequisites
+3. Install iOS pods (Mac only):
+   ```bash
+   cd ios && pod install && cd ..
+   ```
 
-- Node.js 18+ and npm
-- Expo CLI
-- iOS Simulator (Mac) or Android Emulator
-- Expo Go app on your phone (optional)
+## Configuration
 
-### Installation
+### Google Maps API Key (Required for Android Map)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable "Maps SDK for Android"
+4. Create an API key under Credentials
+5. Update `app.json` with your API key:
+   ```json
+   "android": {
+     "config": {
+       "googleMaps": {
+         "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+       }
+     }
+   }
+   ```
+
+Note: iOS uses Apple Maps by default and does not require a Google API key.
+
+## Running the App
+
+### Development Build (Recommended)
+
+Development builds include all native modules (camera, LLM, maps):
+
+**Android:**
+```bash
+npx expo run:android --device
+```
+
+**iOS:**
+```bash
+npx expo run:ios --device
+```
+
+Note: For iOS physical devices, you must trust the developer profile:
+1. Go to Settings > General > VPN and Device Management
+2. Find your developer profile
+3. Tap "Trust"
+
+### iOS Simulator
 
 ```bash
-# Clone the repository
-cd mbta-transit-app
-
-# Install dependencies
-npm install
-
-# Start the development server
-npm start
+npx expo run:ios
 ```
 
-### Running the App
+### Expo Go (Limited Features)
+
+Expo Go does not support native modules like the on-device LLM. Use for basic testing only:
 
 ```bash
-# iOS Simulator
-npm run ios
-
-# Android Emulator
-npm run android
-
-# Web browser
-npm run web
-
-# Expo Go (scan QR code)
-npm start
+npx expo start
 ```
 
-## 🔑 API Configuration
+Then scan the QR code with Expo Go app.
 
-### MBTA API Key (Recommended)
-
-Get higher rate limits (1,000 vs 20 requests/min):
-
-1. Visit https://api-v3.mbta.com/
-2. Register for a free API key
-3. Add to `constants/Config.ts`:
-
-```typescript
-export const API_CONFIG = {
-  BASE_URL: 'https://api-v3.mbta.com',
-  API_KEY: 'your-api-key-here', // Add your key here
-};
-```
-
-### Google Maps API Key (Android only)
-
-1. Get API key from [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable Maps SDK for Android
-3. Add to `app.json`:
-
-```json
-"android": {
-  "config": {
-    "googleMaps": {
-      "apiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
-    }
-  }
-}
-```
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 mbta-transit-app/
 ├── app/                    # Expo Router screens
-│   ├── (tabs)/            # Tab navigation
-│   │   ├── index.tsx      # Map screen
-│   │   ├── planner.tsx    # Trip planner
-│   │   ├── connections.tsx # Live connections
-│   │   └── settings.tsx   # Settings
-│   ├── _layout.tsx        # Root layout
-│   └── modal.tsx          # About modal
-├── components/            # Reusable UI components
-│   ├── Map/
-│   ├── RouteCard/
-│   ├── ConfidenceBadge/
-│   ├── TransferCard/
-│   ├── ConnectionFinder/
-│   ├── StopSelector/
-│   └── ScenarioSimulator/
+│   └── (tabs)/            # Tab navigation screens
+│       ├── index.tsx      # Map screen
+│       ├── connections.tsx # Live connections
+│       ├── planner.tsx    # Trip planner
+│       └── navigate.tsx   # AR navigation
+├── components/            # Reusable components
+│   ├── ARNavigator/       # AR navigation components
+│   ├── Map/               # Map component
+│   ├── ScenarioSimulator/ # What-If scenarios
+│   └── TransferCard/      # Transfer information
 ├── src/
-│   ├── services/          # API & business logic
-│   ├── types/             # TypeScript definitions
+│   ├── services/          # API and LLM services
 │   ├── hooks/             # Custom React hooks
-│   └── utils/             # Helper functions
-└── constants/             # Config & theme colors
+│   ├── data/              # Demo data and station info
+│   └── types/             # TypeScript type definitions
+├── constants/             # App constants and colors
+└── assets/                # Images and static assets
 ```
 
-## 🎨 MBTA Theme
+## Key Commands
 
-Official MBTA colors are used throughout:
+| Command | Description |
+|---------|-------------|
+| `npm install` | Install all dependencies |
+| `npx expo run:android --device` | Build and run on Android device |
+| `npx expo run:ios --device` | Build and run on iOS device |
+| `npx expo run:ios` | Build and run on iOS simulator |
+| `npx expo start` | Start Expo development server |
+| `cd ios && pod install` | Install iOS native dependencies |
 
-- **Navy** `#1C345F` - Primary brand
-- **Red Line** `#DA291C`
-- **Orange Line** `#ED8B00`
-- **Green Line** `#00843D`
-- **Blue Line** `#003DA5`
-- **Silver Line** `#7C878E`
-- **Commuter Rail** `#80276C`
 
-## 🛠️ Tech Stack
+## Troubleshooting
 
-- **React Native** - Mobile framework
-- **Expo** - Development platform
-- **TypeScript** - Type safety
-- **Expo Router** - File-based navigation
-- **React Query** - Data fetching & caching
-- **React Native Maps** - Map display
-- **Axios** - HTTP client
-- **MBTA V3 API** - Real-time transit data
+### iOS: "Profile has not been explicitly trusted"
 
-## 📱 Screens
+On your iOS device:
+1. Go to Settings > General > VPN and Device Management
+2. Find the developer profile
+3. Tap "Trust"
 
-### 1. Map Tab
-Interactive map with route selection and origin/destination markers
+### Android: Map not showing
 
-### 2. Plan Trip Tab
-Transfer guidance with confidence indicators and what-if scenarios
+1. Ensure Google Maps API key is configured in `app.json`
+2. Enable "Maps SDK for Android" in Google Cloud Console
+3. Rebuild the app with `npx expo run:android --device`
 
-### 3. Live Tab
-Real-time connection finder with auto-refreshing predictions
+### LLM not working in Expo Go
 
-### 4. Settings Tab
-Walking speed preferences and app information
-
-## 🧮 Transfer Calculation
-
-Walking time is calculated using:
-
-```typescript
-// Haversine formula for distance
-distance = calculateDistance(stop1.lat, stop1.lon, stop2.lat, stop2.lon)
-
-// Walking time with platform buffer
-walkingTime = (distance / walkingSpeed) + 30 seconds
-
-// Confidence based on buffer
-buffer = availableTime - walkingTime
-confidence = 
-  buffer >= 180s ? 'likely' :
-  buffer >= 60s ? 'risky' : 'unlikely'
+The on-device LLM requires native modules. Use a development build:
+```bash
+npx expo run:android --device
+# or
+npx expo run:ios --device
 ```
 
-## 📊 API Endpoints Used
+### Network errors when offline
 
-- `/routes` - Subway routes (Light Rail + Heavy Rail)
-- `/stops` - Station locations and details
-- `/predictions` - Real-time arrival/departure times
-- `/schedules` - Scheduled times (backup)
-- `/shapes` - Route polylines for map display
-- `/alerts` - Service disruptions (future)
-- `/vehicles` - Real-time positions (future)
+This is expected behavior. The app falls back to offline cached data.
 
-## 🌐 Resources
+## Technologies Used
 
-- [MBTA Website](https://www.mbta.com/)
-- [MBTA V3 API Documentation](https://www.mbta.com/developers/v3-api)
-- [MBTA Developer Portal](https://api-v3.mbta.com/)
-- [Expo Documentation](https://docs.expo.dev/)
-- [React Native Maps](https://github.com/react-native-maps/react-native-maps)
+- **React Native** with Expo
+- **Expo Router** for navigation
+- **React Native Maps** for Google/Apple Maps
+- **Cactus SDK** for on-device LLM (Gemma 3 1B)
+- **React Native Reanimated** for animations
+- **TypeScript** for type safety
+- **MBTA V3 API** for real-time transit data
 
-## ⚖️ License
+## License
 
-This is an unofficial app built for educational purposes. All MBTA data and branding are property of the Massachusetts Bay Transportation Authority.
-
-## 🤝 Contributing
-
-This project was built as a demonstration. For production use:
-
-1. Add comprehensive error handling
-2. Implement route planning algorithm
-3. Add offline support with caching
-4. Enable push notifications
-5. Add unit and integration tests
-6. Optimize API calls and rate limiting
-
-## ⚠️ Disclaimer
-
-This app provides data from the MBTA V3 API. Accuracy is not guaranteed. Always verify important travel information on [mbta.com](https://www.mbta.com/).
-
----
-
-Built with ❤️ for Boston transit riders
+This project is for educational and demonstration purposes.
