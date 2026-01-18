@@ -40,6 +40,3 @@ yarn-error.*
 /ios
 /android
 
-# Large Data Files (Manually downloaded or Generated)
-assets/MBTA_GTFS/
-assets/mbta_offline.db
