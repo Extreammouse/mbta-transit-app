@@ -1,20 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-    View,
+    ActivityIndicator,
+    Image,
+    RefreshControl,
+    ScrollView,
     StyleSheet,
     Text,
-    ScrollView,
     TouchableOpacity,
-    ActivityIndicator,
-    RefreshControl,
+    View,
 } from 'react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
 
 import { MBTA_COLORS } from '@/constants/Colors';
 import { mbtaApi } from '@/src/services/mbta-api';
-import { Route, Stop, Prediction } from '@/src/types/mbta';
-import { formatTime, minutesUntil, formatMinutesUntil, getRouteColor } from '@/src/utils/helpers';
+import { Prediction, Route, Stop } from '@/src/types/mbta';
+import { formatMinutesUntil, formatTime, getRouteColor, minutesUntil } from '@/src/utils/helpers';
 
 const queryClient = new QueryClient();
 
@@ -155,25 +156,46 @@ function LiveConnectionsScreen() {
             >
                 {stops
                     .filter((s) => POPULAR_STATIONS.includes(s.id))
-                    .map((stop) => (
-                        <TouchableOpacity
-                            key={stop.id}
-                            style={[
-                                styles.chip,
-                                selectedStop?.id === stop.id && styles.chipActive,
-                            ]}
-                            onPress={() => setSelectedStop(stop)}
-                        >
-                            <Text
+                    .map((stop) => {
+                        // Map station ID to image resource
+                        const STATION_IMAGES: Record<string, any> = {
+                            'place-dwnxg': require('../../assets/images/downtown_crossing.png'),
+                            'place-pktrm': require('../../assets/images/park_street.png'),
+                            'place-sstat': require('../../assets/images/south_station.png'),
+                            'place-north': require('../../assets/images/north_station.png'),
+                            'place-haecl': require('../../assets/images/haymarket.png'),
+                            'place-gover': require('../../assets/images/government_center.png'),
+                        };
+                        const imageSource = STATION_IMAGES[stop.id];
+
+                        return (
+                            <TouchableOpacity
+                                key={stop.id}
                                 style={[
-                                    styles.chipText,
-                                    selectedStop?.id === stop.id && styles.chipTextActive,
+                                    styles.stationCard,
+                                    selectedStop?.id === stop.id && styles.stationCardActive,
                                 ]}
+                                onPress={() => setSelectedStop(stop)}
+                                activeOpacity={0.8}
                             >
-                                {stop.attributes.name}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
+                                {imageSource && (
+                                    <Image
+                                        source={imageSource}
+                                        style={styles.stationCardImage}
+                                        resizeMode="cover"
+                                    />
+                                )}
+                                <View style={styles.stationCardOverlay}>
+                                    <Text
+                                        style={styles.stationCardText}
+                                        numberOfLines={2}
+                                    >
+                                        {stop.attributes.name}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
             </ScrollView>
 
             {/* Live Indicator */}
@@ -245,7 +267,7 @@ function LiveConnectionsScreen() {
                                             />
                                         </View>
                                         <Text style={styles.destination} numberOfLines={1}>
-                                            {destination || `Direction ${pred.attributes.direction_id}`}
+                                            {destination || `Direction ${pred.attributes.direction_id} `}
                                         </Text>
                                         <View style={styles.timeInfo}>
                                             <Text
@@ -330,30 +352,47 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB',
+        // Removed fixed maxHeight to let content define sizing tight
+        flexGrow: 0,
     },
     chipsContent: {
         paddingHorizontal: 16,
         paddingVertical: 12,
-        gap: 8,
+        gap: 12,
         flexDirection: 'row',
     },
-    chip: {
-        paddingHorizontal: 14,
-        paddingVertical: 8,
+    stationCard: {
+        width: 120,
+        height: 120, // Increased from 90
+        borderRadius: 12,
         backgroundColor: '#F5F7FA',
-        borderRadius: 20,
-        marginRight: 8,
+        overflow: 'hidden',
+        position: 'relative',
+        borderWidth: 2,
+        borderColor: 'transparent',
+        marginRight: 10,
     },
-    chipActive: {
-        backgroundColor: MBTA_COLORS.navy,
+    stationCardActive: {
+        borderColor: MBTA_COLORS.navy,
     },
-    chipText: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: MBTA_COLORS.text,
+    stationCardImage: {
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
     },
-    chipTextActive: {
+    stationCardOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)', // Dark overlay for readability
+        justifyContent: 'flex-end',
+        padding: 8,
+    },
+    stationCardText: {
         color: '#FFFFFF',
+        fontSize: 13,
+        fontWeight: '700',
+        textShadowColor: 'rgba(0,0,0,0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
     },
     liveHeader: {
         flexDirection: 'row',

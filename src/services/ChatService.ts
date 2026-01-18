@@ -81,7 +81,7 @@ class ChatService {
 
                 // GENERIC SQL generated "by the SLM"
                 const sql = `
-          SELECT st.arrival_time, s.stop_name
+          SELECT DISTINCT st.arrival_time, s.stop_name, t.trip_headsign
           FROM stop_times st
           JOIN stops s ON st.stop_id = s.stop_id
           JOIN trips t ON st.trip_id = t.trip_id
@@ -90,7 +90,7 @@ class ChatService {
             AND c.${today} = 1
             AND st.arrival_time > '${currentTime}'
           ORDER BY st.arrival_time ASC
-          LIMIT 3;
+          LIMIT 5;
         `;
 
                 const results = await offlineService.executeQuery(sql);
@@ -99,8 +99,13 @@ class ChatService {
                     return `[Offline] No scheduled trains found for "${destName}" after ${currentTime}.`;
                 }
 
-                const times = results.map((r: any) => r.arrival_time.substring(0, 5)).join(', ');
-                return `[Offline] Scheduled arrivals at ${results[0].stop_name}: ${times}`;
+                // Format: "12:00 (to Alewife)"
+                const times = results.map((r: any) => {
+                    const time = r.arrival_time.substring(0, 5);
+                    return `${time} (to ${r.trip_headsign})`;
+                }).join(', ');
+
+                return `[Offline] Scheduled at ${results[0].stop_name}: ${times}`;
             }
 
             return "I'm offline. I can check schedules locally. Try 'Next train to South Station'.";
